@@ -113,7 +113,10 @@ def change_password(request):
 @extend_schema(methods=['post'], request=serializers.ManageUserSerializer)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@parser_classes([CamelCaseJSONParser])
 def manage_user(request):
+    if 'Admin' not in request.user.groups.values_list('name', flat=True):
+        return Response({'detail': 'Permission Denied'}, status=403)
     serializer = serializers.ManageUserSerializer(data=request.data, context={'request': request})
     serializer.is_valid(raise_exception=True)
     serializer.save()

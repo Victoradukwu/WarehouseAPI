@@ -9,7 +9,7 @@ from .models import User, PasswordResetToken, Supplier, Product, InvoiceProduct,
 class UserAdmin(DjangoUserAdmin):
     fieldsets = (
         (None, {"fields": ("password",)}),
-        (_("Personal info"), {"fields": ("first_name", "last_name", "email")}),
+        (_("Personal info"), {"fields": ("first_name", "last_name", "middle_name", "email", "phone_number")}),
         (
             _("Permissions"),
             {
