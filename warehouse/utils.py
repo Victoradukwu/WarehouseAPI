@@ -4,6 +4,7 @@ import threading
 from django.core.mail import EmailMessage
 from django_filters import rest_framework as filters
 from . import models
+# from .models import User
 
 
 # @shared_task
@@ -14,6 +15,30 @@ def send_email(payload):
     email = EmailMessage(subject, html_content, to=to_email)
     email.content_subtype = "html"
     email.send()
+
+
+def send_threshold_alert(product, managers):
+    for user in managers:
+        email_body = f"<html>" \
+                     f"<head>" \
+                     f"</head>" \
+                     f"<body>" \
+                     f"<p>Hi {user.first_name},</p>" \
+                     f"<p>This is to notify you that the product <b>{product.name}</b> is running low. The current stock is {product.stock_value} {product.product_unit}</p>" \
+                     f"<p>Consider restocking as soon as possible</p>" \
+                     f"</body>" \
+                     f"</html>"
+
+        payload = {
+            'subject': 'Product level notification',
+            'html_content': email_body,
+            'to_email': user.email
+        }
+        threshold_alert_thread = threading.Thread(
+            target=send_email, args=(payload,)
+        )
+        threshold_alert_thread.start()
+    return
 
 
 def send_pw_reset_email(token, user):
