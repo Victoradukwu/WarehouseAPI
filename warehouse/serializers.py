@@ -129,7 +129,6 @@ class ManageUserSerializer(serializers.Serializer):
         roles = self.validated_data.get('roles')
         is_active = self.validated_data.get('is_active')
         user_id = self.validated_data.get('user_id')
-        print('KKKKK', roles, is_active, self.validated_data)
 
         user = User.objects.get(id=user_id)
         if is_active:

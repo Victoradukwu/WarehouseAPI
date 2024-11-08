@@ -2,6 +2,7 @@ import math
 import uuid
 
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import Group
 from djangorestframework_camel_case.parser import CamelCaseFormParser, CamelCaseMultiPartParser, CamelCaseJSONParser
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -121,3 +122,9 @@ def manage_user(request):
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response({'detail': 'Successful'})
+
+
+@api_view()
+def get_roles(request):
+    roles = Group.objects.values('id', 'name')
+    return Response(roles)
