@@ -209,8 +209,8 @@ def create_product_movement(product_id, quantity, movement_type, user_id, stock_
     )
 
 
-@transaction.atomic()
-def update_stock(product, change_type, quantity, user):
+@transaction.atomic
+def update_stock(product, change_type, quantity, user, invoice_id=None):
     if change_type not in ['Decrease', 'Increase']:
         raise ValueError('Change type must be either "Decrease" or "Increase"')
 
@@ -220,13 +220,22 @@ def update_stock(product, change_type, quantity, user):
     if change_type == 'Decrease':
         product.stock_value -= float(quantity)
         product.save()
-        create_product_movement(product.id, float(quantity), models.StockMovement.DECREASE, user.id, stock_before)
+        create_product_movement(product.id, float(quantity), models.StockMovement.DECREASE, user.id, stock_before, invoice_id)
     else:
         product.stock_value += float(quantity)
         product.save()
-        create_product_movement(product.id, float(quantity), models.StockMovement.INCREASE, user.id, stock_before)
+        create_product_movement(product.id, float(quantity), models.StockMovement.INCREASE, user.id, stock_before, invoice_id)
     product.refresh_from_db()
     return product
+
+
+@transaction.atomic
+def supply_invoice_items(invoice, user):
+    invoice_products = models.InvoiceProduct.objects.filter(invoice=invoice)
+    for inv in invoice_products:
+        product = models.Product.objects.get(id=inv.product_id)
+        update_stock(product, 'Decrease', inv.quantity, user, invoice.id)
+    return
 
 
 @extend_schema(description='This endpoint is called to update the product stock value. Change_type is either `Increase` or `Decrease`')
@@ -253,3 +262,72 @@ class StockMovementListView(generics.ListAPIView):
 
     def get_queryset(self):
         return models.StockMovement.objects.all()
+
+
+@extend_schema(methods=['post'], request=serializers.InvoiceCreateSerializer)
+@api_view(['POST'])
+@permission_classes([permissions.IsCashier])
+@parser_classes([CamelCaseJSONParser])
+def create_invoice(request):
+    serializer = serializers.InvoiceCreateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    invoice = serializer.save()
+    return Response(serializers.InvoiceSerializer(invoice).data)
+
+
+@api_view()
+def list_invoices(request):
+    invoices = models.Invoice.objects.filter(status=models.ACTIVE)
+    return Response(serializers.InvoiceSerializer(invoices, many=True).data)
+
+
+@api_view()
+def retrieve_invoice(request, pk):
+    invoice = models.Invoice.objects.filter(status=models.ACTIVE).get(id=pk)
+    return Response(serializers.InvoiceSerializer(invoice).data)
+
+
+@extend_schema(methods=['patch'], request=serializers.InvoiceUpdateSerializer)
+@api_view(['PATCH'])
+@permission_classes([permissions.IsCashier])
+@parser_classes([CamelCaseJSONParser])
+def update_invoice(request, pk):
+    instance = models.Invoice.objects.filter(status=models.ACTIVE).get(id=pk)
+    if instance.invoice_status != models.Invoice.PENDING:
+        raise ValueError('You can only update an invoice before payment')
+    serializer = serializers.InvoiceUpdateSerializer(data=request.data, context={'request': request, 'pk': pk})
+    serializer.is_valid(raise_exception=True)
+    invoice = serializer.save()
+    return Response(serializers.InvoiceSerializer(invoice).data)
+
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsCashier])
+def delete_invoice(request, pk):
+    invoice = models.Invoice.objects.filter(status=models.ACTIVE).get(id=pk)
+    invoice.status = models.INACTIVE
+    invoice.save()
+    return Response(status=204)
+
+
+@api_view()
+@permission_classes([permissions.IsCashier])
+def pay_invoice(request, pk):
+    invoice = models.Invoice.objects.filter(status=models.ACTIVE).get(id=pk)
+    invoice.invoice_status = models.Invoice.PAID
+    invoice.date_paid = datetime.datetime.now()
+    invoice.save()
+    return Response({'detail': 'Invoice paid'})
+
+
+@api_view()
+@permission_classes([permissions.IsSalesperson])
+def supply_invoice(request, pk):
+    invoice = models.Invoice.objects.filter(status=models.ACTIVE).get(id=pk)
+    if invoice.invoice_status != models.Invoice.PAID:
+        raise ValueError('This invoice has not been paid yet')
+    supply_invoice_items(invoice, request.user)
+    invoice.invoice_status = models.Invoice.DELIVERED
+    invoice.date_supplied = datetime.datetime.now()
+    invoice.save()
+    return Response({'detail': 'Invoice supplied'})

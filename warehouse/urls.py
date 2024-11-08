@@ -18,4 +18,11 @@ urlpatterns = [
     path('warehouse/products/<pk>', views.ProductDetailView.as_view(), name='products_detail'),
     path('warehouse/stock-update/<product_id>/<quantity>/<change_type>', views.stock_update, name='stock_update'),
     path('warehouse/stock-movement/', views.StockMovementListView.as_view(), name='stock_movement_list'),
+    path('warehouse/invoices-create/', views.create_invoice, name='stock_update'),
+    path('warehouse/invoices-list/', views.list_invoices, name='stock_update'),
+    path('warehouse/invoices-retrieve/<pk>/', views.retrieve_invoice, name='retrieve_invoice'),
+    path('warehouse/invoices-update/<pk>/', views.update_invoice, name='update_invoice'),
+    path('warehouse/invoices-delete/<pk>/', views.delete_invoice, name='delete_invoice'),
+    path('warehouse/invoices-payment/<pk>/', views.pay_invoice, name='pay_invoice'),
+    path('warehouse/invoices-supply/<pk>/', views.supply_invoice, name='supply_invoice'),
 ]

@@ -61,3 +61,9 @@ class StockMovementFilter(filters.FilterSet):
     movement_type = filters.CharFilter(field_name='movement_type', lookup_expr='iexact')
 
 
+def generate_invoice_number():
+    last_invoice = models.Invoice.objects.filter(invoice_number__isnull=False).order_by('invoice_number').last()
+    if last_invoice:
+        invoice_number = int(last_invoice.invoice_number.split('-')[-1]) + 1
+        return f'INV-{invoice_number:06}'
+    return 'INV-000001'

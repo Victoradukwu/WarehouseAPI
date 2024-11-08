@@ -1,5 +1,7 @@
+import datetime
 
 from django.contrib.auth.models import Group
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
@@ -168,3 +170,74 @@ class StockMovementSerializer(serializers.ModelSerializer):
             'stock_after',
             'user'
         ]
+
+
+# class InvoiceProductSerializer(serializers.Serializer):
+#     id =
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    products = serializers.SerializerMethodField()
+
+    class Meta:
+        model = all_models.Invoice
+        fields = [
+            'id',
+            'invoice_number',
+            'customer_name',
+            'customer_contact',
+            'total',
+            'invoice_status',
+            'date_paid',
+            'date_supplied',
+            'products',
+            'status',
+            'created'
+        ]
+
+    def get_products(self, instance):
+        return instance.invoice_products.values('id', 'product', 'quantity', 'cost', 'product__name')
+
+
+class ItemSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+    quantity = serializers.FloatField()
+
+
+class InvoiceCreateSerializer(serializers.Serializer):
+    products = serializers.ListField(child=ItemSerializer())
+    customer_name = serializers.CharField()
+    customer_contact = serializers.CharField()
+    invoice_status = serializers.ChoiceField(choices=['Pending', 'Paid'], default='Pending')
+
+    def save(self):
+        data = self.validated_data
+        products = data.pop('products', [])
+        if data.get('invoice_status') == 'Paid':
+            data['date_paid'] = datetime.datetime.now()
+        invoice = all_models.Invoice.objects.create(**data)
+        for item in products:
+            all_models.InvoiceProduct.objects.create(**item, invoice=invoice)
+        return invoice
+
+
+class InvoiceUpdateSerializer(serializers.Serializer):
+    products = serializers.ListField(child=ItemSerializer(), required=False)
+    customer_name = serializers.CharField(required=False)
+    customer_contact = serializers.CharField(required=False)
+
+    @transaction.atomic
+    def save(self):
+        pk = self.context.get('pk')
+        data = self.validated_data
+        instance = all_models.Invoice.objects.filter(status=all_models.ACTIVE).get(id=pk)
+        products = data.pop('products', [])
+        if products:
+            instance.invoice_products.all().delete()
+            for item in products:
+                all_models.InvoiceProduct.objects.create(**item, invoice=instance)
+        for key, val in data.items():
+            setattr(instance, key, val)
+        instance.save()
+        instance.refresh_from_db()
+        return instance

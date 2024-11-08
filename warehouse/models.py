@@ -1,5 +1,6 @@
 
 import uuid
+from _decimal import Decimal
 from pathlib import Path
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -10,6 +11,7 @@ from django_extensions.db.models import TimeStampedModel
 from django.utils.translation import gettext_lazy as _
 from versatileimagefield.fields import VersatileImageField
 
+from warehouse import utils
 
 ACTIVE = 'Active'
 INACTIVE = 'Inactive'
@@ -108,7 +110,7 @@ class Product(TimeStampedModel):
     product_unit = models.CharField(max_length=50)
     threshold_value = models.IntegerField()
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
-    stock_value = models.FloatField(MinValueValidator(0))
+    stock_value = models.FloatField()
     qr_code = models.CharField(max_length=100)
     image = VersatileImageField('product_image', null=True, blank=True, upload_to=path_and_filename)
     status = models.CharField(max_length=9, choices=ACTIVITY_CHOICES, default=ACTIVE)
@@ -121,6 +123,13 @@ class InvoiceProduct(TimeStampedModel):
     product = models.ForeignKey(Product, related_name='invoice_products', on_delete=models.PROTECT)
     invoice = models.ForeignKey('Invoice', related_name='invoice_products', on_delete=models.PROTECT)
     quantity = models.FloatField()
+    cost = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        self.cost = Decimal(self.quantity) * self.product.unit_price
+        super().save(*args, **kwargs)
+        self.invoice.total = sum(self.invoice.invoice_products.values_list('cost', flat=True))
+        self.invoice.save()
 
 
 class Invoice(TimeStampedModel):
@@ -128,15 +137,23 @@ class Invoice(TimeStampedModel):
     PAID = 'Paid'
     DELIVERED = 'Delivered'
     INVOICE_STATUS_CHOICES = [(PENDING, PENDING), (PAID, PAID), (DELIVERED, DELIVERED)]
-    invoice_number = models.CharField(max_length=50, unique=True)
+    invoice_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
     customer_name = models.CharField(max_length=255)
     customer_contact = models.CharField(max_length=15)
-    total = models.DecimalField(max_digits=12, decimal_places=2)
+    total = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     invoice_status = models.CharField(max_length=9, choices=INVOICE_STATUS_CHOICES, default=PENDING)
     date_paid = models.DateTimeField(null=True, blank=True)
     date_supplied = models.DateTimeField(null=True, blank=True)
     products = models.ManyToManyField(Product, through=InvoiceProduct)
     status = models.CharField(max_length=9, choices=ACTIVITY_CHOICES, default=ACTIVE)
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            self.invoice_number = utils.generate_invoice_number()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.invoice_number
 
 
 class StockMovement(TimeStampedModel):
@@ -145,7 +162,7 @@ class StockMovement(TimeStampedModel):
     MOVEMENT_TYPE_CHOICES = [(INCREASE, INCREASE), (DECREASE, DECREASE)]
     date = models.DateTimeField()
     product = models.ForeignKey(Product, related_name='stock_movements', on_delete=models.PROTECT)
-    quantity = models.FloatField(MinValueValidator(0))
+    quantity = models.FloatField()
     movement_type = models.CharField(max_length=9, choices=MOVEMENT_TYPE_CHOICES)
     invoice = models.ForeignKey(Invoice, related_name='stock_movements', on_delete=models.PROTECT, blank=True, null=True)
     stock_before = models.FloatField()
