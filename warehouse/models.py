@@ -147,9 +147,10 @@ class StockMovement(TimeStampedModel):
     product = models.ForeignKey(Product, related_name='stock_movements', on_delete=models.PROTECT)
     quantity = models.FloatField(MinValueValidator(0))
     movement_type = models.CharField(max_length=9, choices=MOVEMENT_TYPE_CHOICES)
-    invoice = models.ForeignKey(Invoice, related_name='stock_movements', on_delete=models.PROTECT)
+    invoice = models.ForeignKey(Invoice, related_name='stock_movements', on_delete=models.PROTECT, blank=True, null=True)
     stock_before = models.FloatField()
     stock_after = models.FloatField()
+    user = models.ForeignKey(User, related_name='stock_movements', on_delete=models.PROTECT, null=True)
 
     def save(self, *args, **kwargs):
         if self.movement_type == self.INCREASE:

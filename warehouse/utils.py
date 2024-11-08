@@ -1,6 +1,9 @@
+
 import os
 import threading
 from django.core.mail import EmailMessage
+from django_filters import rest_framework as filters
+from . import models
 
 
 # @shared_task
@@ -36,3 +39,25 @@ def send_pw_reset_email(token, user):
     )
     pw_reset_thread.start()
     return
+
+
+class ProductFilter(filters.FilterSet):
+    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
+    supplier = filters.NumberFilter(field_name='supplier', lookup_expr='exact')
+    # stock_value = filters.LookupChoiceFilter(
+    #     field_name='stock_value',
+    #     lookup_choices=[('exact', 'Equal'), ('gte', 'Greater than'), ('lte', 'Less than')]
+    # )
+    status = filters.CharFilter(field_name="status", lookup_expr="iexact")
+
+
+class StockMovementFilter(filters.FilterSet):
+    user = filters.NumberFilter(field_name='user', lookup_expr='exact')
+    product = filters.NumberFilter(field_name='product', lookup_expr='exact')
+    invoice = filters.NumberFilter(field_name='invoice', lookup_expr='exact')
+    # exact_date = filters.DateFilter(field_name='date__date', lookup_expr='exact')
+    # before_date = filters.DateFilter(field_name='date__date', lookup_expr='lte')
+    # after_date = filters.DateFilter(field_name='date__date', lookup_expr='gte')
+    movement_type = filters.CharFilter(field_name='movement_type', lookup_expr='iexact')
+
+

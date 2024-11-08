@@ -137,3 +137,34 @@ class ManageUserSerializer(serializers.Serializer):
             groups = Group.objects.filter(name__in=roles)
             user.groups.set(groups)
         user.save()
+
+
+class SupplierSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = all_models.Supplier
+        fields = ['id', 'name', 'email', 'phone_number']
+
+
+class ProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = all_models.Product
+        fields = ['id', 'name', 'supplier', 'product_unit', 'threshold_value', 'unit_price', 'stock_value', 'qr_code', 'image', 'status']
+
+
+class StockMovementSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = all_models.StockMovement
+        fields = [
+            'id',
+            'date',
+            'product',
+            'quantity',
+            'movement_type',
+            'invoice',
+            'stock_before',
+            'stock_after',
+            'user'
+        ]

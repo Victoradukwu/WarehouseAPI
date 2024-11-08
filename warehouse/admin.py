@@ -98,9 +98,10 @@ class StockMovementAdmin(admin.ModelAdmin):
         'id',
         'date',
         'product',
-        'quantity',
-        'movement_type',
         'invoice',
+        'movement_type',
         'stock_before',
-        'stock_after'
+        'quantity',
+        'stock_after',
+        'user'
     ]

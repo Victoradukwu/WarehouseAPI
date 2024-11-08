@@ -11,5 +11,11 @@ urlpatterns = [
     path('auth/complete-password-reset/', views.complete_password_reset, name='reset_complete'),
     path('auth/change-password/', views.change_password, name='change_complete'),
     path('auth/manage-user/', views.manage_user, name='manage_user'),
-    path('auth/get-roles/', views.get_roles, name='get_roles')
+    path('auth/get-roles/', views.get_roles, name='get_roles'),
+    path('warehouse/suppliers/', views.SupplierListView.as_view(), name='suppliers_list'),
+    path('warehouse/suppliers/<pk>', views.SupplierDetailView.as_view(), name='suppliers_detail'),
+    path('warehouse/products/', views.ProductListView.as_view(), name='products_list'),
+    path('warehouse/products/<pk>', views.ProductDetailView.as_view(), name='products_detail'),
+    path('warehouse/stock-update/<product_id>/<quantity>/<change_type>', views.stock_update, name='stock_update'),
+    path('warehouse/stock-movement/', views.StockMovementListView.as_view(), name='stock_movement_list'),
 ]

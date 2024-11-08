@@ -1,11 +1,14 @@
+import datetime
 import math
 import uuid
 
+import django_filters
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Group
+from django.db import transaction
 from djangorestframework_camel_case.parser import CamelCaseFormParser, CamelCaseMultiPartParser, CamelCaseJSONParser
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.pagination import PageNumberPagination
@@ -113,11 +116,9 @@ def change_password(request):
 
 @extend_schema(methods=['post'], request=serializers.ManageUserSerializer)
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([permissions.IsWareHouseAdmin])
 @parser_classes([CamelCaseJSONParser])
 def manage_user(request):
-    if 'Admin' not in request.user.groups.values_list('name', flat=True):
-        return Response({'detail': 'Permission Denied'}, status=403)
     serializer = serializers.ManageUserSerializer(data=request.data, context={'request': request})
     serializer.is_valid(raise_exception=True)
     serializer.save()
@@ -128,3 +129,127 @@ def manage_user(request):
 def get_roles(request):
     roles = Group.objects.values('id', 'name')
     return Response(roles)
+
+
+class SupplierListView(generics.ListCreateAPIView):
+    """
+       get:
+       Return a list of supplier objects
+       post:
+       Create a new supplier object
+
+    """
+    permission_classes = [permissions.IsWareHouseManager]
+    serializer_class = serializers.SupplierSerializer
+
+    def get_queryset(self):
+        return models.Supplier.objects.all()
+
+
+class SupplierDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+       get:
+       Retrieves a single supplier objects
+       patch:
+       Updates a single supplier objects
+       delete:
+       Deletes a single supplier objects
+    """
+    permission_classes = [permissions.IsWareHouseManager]
+    serializer_class = serializers.SupplierSerializer
+    allowed_methods = ['patch', 'delete', 'get']
+
+    def get_queryset(self):
+        return models.Supplier.objects.all()
+
+
+class ProductListView(generics.ListCreateAPIView):
+    """
+       get:
+       Return a list of product objects
+       post:
+       Create a new product object
+
+    """
+    permission_classes = [permissions.IsWareHouseManager]
+    serializer_class = serializers.ProductSerializer
+    filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
+    filterset_class = utils.ProductFilter
+
+    def get_queryset(self):
+        return models.Product.objects.all()
+
+
+class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+       get:
+       Retrieves a single product objects
+       patch:
+       Updates a single product objects
+       delete:
+       Deletes a single product objects
+    """
+    permission_classes = [permissions.IsWareHouseManager]
+    serializer_class = serializers.ProductSerializer
+    allowed_methods = ['patch', 'delete', 'get']
+
+    def get_queryset(self):
+        return models.Product.objects.all()
+
+
+def create_product_movement(product_id, quantity, movement_type, user_id, stock_before, invoice_id=None):
+    models.StockMovement.objects.create(
+        date=datetime.datetime.now(),
+        product_id=product_id,
+        quantity=quantity,
+        movement_type=movement_type,
+        user_id=user_id,
+        invoice_id=invoice_id,
+        stock_before=stock_before
+    )
+
+
+@transaction.atomic()
+def update_stock(product, change_type, quantity, user):
+    if change_type not in ['Decrease', 'Increase']:
+        raise ValueError('Change type must be either "Decrease" or "Increase"')
+
+    stock_before = product.stock_value
+    if change_type == 'Decrease' and product.stock_value < float(quantity):
+        raise ValueError('Insufficient stock')
+    if change_type == 'Decrease':
+        product.stock_value -= float(quantity)
+        product.save()
+        create_product_movement(product.id, float(quantity), models.StockMovement.DECREASE, user.id, stock_before)
+    else:
+        product.stock_value += float(quantity)
+        product.save()
+        create_product_movement(product.id, float(quantity), models.StockMovement.INCREASE, user.id, stock_before)
+    product.refresh_from_db()
+    return product
+
+
+@extend_schema(description='This endpoint is called to update the product stock value. Change_type is either `Increase` or `Decrease`')
+@api_view()
+@permission_classes([permissions.IsWareHouseManager])
+@parser_classes([CamelCaseJSONParser])
+def stock_update(request, product_id, quantity, change_type):
+    if change_type not in ['Increase','Decrease']:
+        raise ValueError('Change type must be either "Increase" or "Decrease"')
+    product = models.Product.objects.get(id=product_id)
+    updated_product = update_stock(product, change_type, quantity, request.user)
+    return Response(serializers.ProductSerializer(updated_product).data)
+
+
+class StockMovementListView(generics.ListAPIView):
+    """
+       get:
+       Return a list of stock_movement objects
+
+    """
+    serializer_class = serializers.StockMovementSerializer
+    filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
+    filterset_class = utils.StockMovementFilter
+
+    def get_queryset(self):
+        return models.StockMovement.objects.all()
