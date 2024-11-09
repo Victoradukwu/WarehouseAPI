@@ -125,6 +125,29 @@ def manage_user(request):
     return Response({'detail': 'Successful'})
 
 
+class UserListView(generics.ListAPIView):
+    """
+       get:
+       Return a list of user objects
+
+    """
+    serializer_class = serializers.UserSerializer
+
+    def get_queryset(self):
+        return models.User.objects.all()
+
+
+class UserRetrieveView(generics.RetrieveAPIView):
+    """
+       get:
+       Retrieves a single user object
+    """
+    serializer_class = serializers.UserSerializer
+
+    def get_queryset(self):
+        return models.User.objects.all()
+
+
 @api_view()
 def get_roles(request):
     roles = Group.objects.values('id', 'name')
