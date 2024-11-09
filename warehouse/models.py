@@ -99,6 +99,7 @@ class Supplier(TimeStampedModel):
     name = models.CharField(max_length=255, unique=True)
     phone_number = models.CharField(max_length=15, unique=True)
     email = models.EmailField(unique=True)
+    status = models.CharField(max_length=9, choices=ACTIVITY_CHOICES, default=ACTIVE)
 
     def __str__(self):
         return self.name

@@ -143,7 +143,7 @@ class SupplierListView(generics.ListCreateAPIView):
     serializer_class = serializers.SupplierSerializer
 
     def get_queryset(self):
-        return models.Supplier.objects.all()
+        return models.Supplier.objects.filter(status=models.ACTIVE)
 
 
 class SupplierDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -160,7 +160,11 @@ class SupplierDetailView(generics.RetrieveUpdateDestroyAPIView):
     allowed_methods = ['patch', 'delete', 'get']
 
     def get_queryset(self):
-        return models.Supplier.objects.all()
+        return models.Supplier.objects.filter(status=models.ACTIVE)
+
+    def perform_destroy(self, instance):
+        instance.status = models.INACTIVE
+        instance.save()
 
 
 class ProductListView(generics.ListCreateAPIView):
@@ -177,7 +181,7 @@ class ProductListView(generics.ListCreateAPIView):
     filterset_class = utils.ProductFilter
 
     def get_queryset(self):
-        return models.Product.objects.all()
+        return models.Product.objects.filter(status=models.ACTIVE).all()
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -194,7 +198,11 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     allowed_methods = ['patch', 'delete', 'get']
 
     def get_queryset(self):
-        return models.Product.objects.all()
+        return models.Product.objects.filter(status=models.ACTIVE).all()
+
+    def perform_destroy(self, instance):
+        instance.status = models.INACTIVE
+        instance.save()
 
 
 def create_product_movement(product_id, quantity, movement_type, user_id, stock_before, invoice_id=None):
