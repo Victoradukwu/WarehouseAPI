@@ -114,7 +114,7 @@ def change_password(request):
     return Response({'detail': 'Password change successful'})
 
 
-@extend_schema(methods=['post'], request=serializers.ManageUserSerializer)
+@extend_schema(methods=['post'], request=serializers.ManageUserSerializer, description='The user with "Admin" role uses this endpoint to change activate/deactivate a user and to change the roles assignemd to a user')
 @api_view(['POST'])
 @permission_classes([permissions.IsWareHouseAdmin])
 @parser_classes([CamelCaseJSONParser])
@@ -127,9 +127,7 @@ def manage_user(request):
 
 class UserListView(generics.ListAPIView):
     """
-       get:
-       Return a list of user objects
-
+       This endpoint returns a list of users
     """
     serializer_class = serializers.UserSerializer
 
@@ -139,8 +137,7 @@ class UserListView(generics.ListAPIView):
 
 class UserRetrieveView(generics.RetrieveAPIView):
     """
-       get:
-       Retrieves a single user object
+       This endpoint returns the details of a single user
     """
     serializer_class = serializers.UserSerializer
 
@@ -148,6 +145,7 @@ class UserRetrieveView(generics.RetrieveAPIView):
         return models.User.objects.all()
 
 
+@extend_schema(description='This endpoint returns a list of available roles in the system. The Admin can then select the roles to assign to users')
 @api_view()
 def get_roles(request):
     roles = Group.objects.values('id', 'name')
@@ -269,7 +267,7 @@ def supply_invoice_items(invoice, user):
     return
 
 
-@extend_schema(description='This endpoint is called to update the product stock value. Change_type is either `Increase` or `Decrease`')
+@extend_schema(description='This endpoint is called to update the product stock value. Change_type is either `Increase` or `Decrease` Only the "Warehouse Manager" has authorization for this. Whenever there is a supply from a supplier, the Warehouse Manager uses this endpoint to update the records.')
 @api_view()
 @permission_classes([permissions.IsWareHouseManager])
 @parser_classes([CamelCaseJSONParser])
@@ -283,9 +281,7 @@ def stock_update(request, product_id, quantity, change_type):
 
 class StockMovementListView(generics.ListAPIView):
     """
-       get:
-       Return a list of stock_movement objects
-
+       This endpoint returns a list of stock_movement objects. The records returned here are generated when sales are made or when the warehouse is restocked
     """
     serializer_class = serializers.StockMovementSerializer
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
@@ -312,6 +308,7 @@ def list_invoices(request):
     return Response(serializers.InvoiceSerializer(invoices, many=True).data)
 
 
+@extend_schema(description='This endpoint returns the details of a single invoice')
 @api_view()
 def retrieve_invoice(request, pk):
     invoice = models.Invoice.objects.filter(status=models.ACTIVE).get(id=pk)
@@ -341,6 +338,7 @@ def delete_invoice(request, pk):
     return Response(status=204)
 
 
+@extend_schema(description='This endpoint is called to mark an invoice as `Paid`. Only the `Cashier` has this authorization')
 @api_view()
 @permission_classes([permissions.IsCashier])
 def pay_invoice(request, pk):
@@ -351,6 +349,7 @@ def pay_invoice(request, pk):
     return Response({'detail': 'Invoice paid'})
 
 
+@extend_schema(description='This endpoint is called to indicated that the items on the specified invoice have been delivered to the buyer. Only the `Salesperson` has this authorization')
 @api_view()
 @permission_classes([permissions.IsSalesperson])
 def supply_invoice(request, pk):

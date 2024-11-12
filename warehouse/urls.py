@@ -25,6 +25,6 @@ urlpatterns = [
     path('warehouse/invoices-retrieve/<pk>/', views.retrieve_invoice, name='retrieve_invoice'),
     path('warehouse/invoices-update/<pk>/', views.update_invoice, name='update_invoice'),
     path('warehouse/invoices-delete/<pk>/', views.delete_invoice, name='delete_invoice'),
-    path('warehouse/invoices-payment/<pk>/', views.pay_invoice, name='pay_invoice'),
-    path('warehouse/invoices-supply/<pk>/', views.supply_invoice, name='supply_invoice'),
+    path('warehouse/invoices-paid/<pk>/', views.pay_invoice, name='pay_invoice'),
+    path('warehouse/invoices-supplied/<pk>/', views.supply_invoice, name='supply_invoice'),
 ]

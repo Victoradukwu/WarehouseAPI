@@ -155,7 +155,22 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'supplier', 'product_unit', 'threshold_value', 'unit_price', 'stock_value', 'qr_code', 'image', 'status']
 
 
+class InvoiceSerializer2(serializers.ModelSerializer):
+
+    class Meta:
+        model = all_models.Invoice
+        fields = [
+            'id',
+            'invoice_number',
+            'customer_name',
+            'customer_contact',
+            'total',
+            'invoice_status'
+        ]
+
+
 class StockMovementSerializer(serializers.ModelSerializer):
+    invoice = InvoiceSerializer2()
 
     class Meta:
         model = all_models.StockMovement
