@@ -112,8 +112,7 @@ ALLOWED_HOSTS = ['*']
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://victor:victor@localhost:5432/warehouse',
-        conn_max_age=600
+        default='postgresql://victor:victor@localhost:5432/warehouse'
     )
 }
 
