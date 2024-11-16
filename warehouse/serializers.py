@@ -154,6 +154,12 @@ class ProductSerializer(serializers.ModelSerializer):
         model = all_models.Product
         fields = ['id', 'name', 'supplier', 'product_unit', 'threshold_value', 'unit_price', 'stock_value', 'qr_code', 'image', 'status']
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        supplier_id = data.pop('supplier')
+        data['supplier'] = all_models.Supplier.objects.get(id=supplier_id).name
+        return data
+
 
 class InvoiceSerializer2(serializers.ModelSerializer):
 
@@ -185,10 +191,10 @@ class StockMovementSerializer(serializers.ModelSerializer):
             'stock_after',
             'user'
         ]
-
-
-# class InvoiceProductSerializer(serializers.Serializer):
-#     id =
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['date'] = instance.date.date() if instance.date else None
+        return data
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
@@ -209,6 +215,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'status',
             'created'
         ]
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['created'] = instance.created.date()
+        data['date_paid'] = instance.date_paid.date() if instance.date_paid else None
+        data['date_supplied'] = instance.date_supplied.date() if instance.date_supplied else None
+        return data
 
     def get_products(self, instance):
         return instance.invoice_products.values('id', 'product', 'quantity', 'cost', 'product__name')
