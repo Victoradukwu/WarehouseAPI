@@ -1,7 +1,8 @@
-
+import datetime
 import os
 import threading
 from django.core.mail import EmailMessage
+from django.db import transaction
 from django_filters import rest_framework as filters
 from . import models
 # from .models import User
@@ -92,3 +93,35 @@ def generate_invoice_number():
         invoice_number = int(last_invoice.invoice_number.split('-')[-1]) + 1
         return f'INV-{invoice_number:06}'
     return 'INV-000001'
+
+
+def create_product_movement(product_id, quantity, movement_type, user_id, stock_before, invoice_id=None):
+    models.StockMovement.objects.create(
+        date=datetime.datetime.now(),
+        product_id=product_id,
+        quantity=quantity,
+        movement_type=movement_type,
+        user_id=user_id,
+        invoice_id=invoice_id,
+        stock_before=stock_before
+    )
+
+
+@transaction.atomic
+def update_stock(product, change_type, quantity, user, invoice_id=None):
+    if change_type not in ['Decrease', 'Increase']:
+        raise ValueError('Change type must be either "Decrease" or "Increase"')
+
+    stock_before = product.stock_value
+    if change_type == 'Decrease' and product.stock_value < float(quantity):
+        raise ValueError('Insufficient stock')
+    if change_type == 'Decrease':
+        product.stock_value -= float(quantity)
+        product.save()
+        create_product_movement(product.id, float(quantity), models.StockMovement.DECREASE, user.id, stock_before, invoice_id)
+    else:
+        product.stock_value += float(quantity)
+        product.save()
+        create_product_movement(product.id, float(quantity), models.StockMovement.INCREASE, user.id, stock_before, invoice_id)
+    product.refresh_from_db()
+    return product

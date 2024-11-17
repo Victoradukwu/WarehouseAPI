@@ -16,6 +16,7 @@ from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 
 from warehouse import serializers, models, utils, permissions
+from warehouse.utils import update_stock
 
 
 class PageSizeAndNumberPagination(PageNumberPagination):
@@ -226,38 +227,6 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.save()
 
 
-def create_product_movement(product_id, quantity, movement_type, user_id, stock_before, invoice_id=None):
-    models.StockMovement.objects.create(
-        date=datetime.datetime.now(),
-        product_id=product_id,
-        quantity=quantity,
-        movement_type=movement_type,
-        user_id=user_id,
-        invoice_id=invoice_id,
-        stock_before=stock_before
-    )
-
-
-@transaction.atomic
-def update_stock(product, change_type, quantity, user, invoice_id=None):
-    if change_type not in ['Decrease', 'Increase']:
-        raise ValueError('Change type must be either "Decrease" or "Increase"')
-
-    stock_before = product.stock_value
-    if change_type == 'Decrease' and product.stock_value < float(quantity):
-        raise ValueError('Insufficient stock')
-    if change_type == 'Decrease':
-        product.stock_value -= float(quantity)
-        product.save()
-        create_product_movement(product.id, float(quantity), models.StockMovement.DECREASE, user.id, stock_before, invoice_id)
-    else:
-        product.stock_value += float(quantity)
-        product.save()
-        create_product_movement(product.id, float(quantity), models.StockMovement.INCREASE, user.id, stock_before, invoice_id)
-    product.refresh_from_db()
-    return product
-
-
 @transaction.atomic
 def supply_invoice_items(invoice, user):
     invoice_products = models.InvoiceProduct.objects.filter(invoice=invoice)
@@ -267,15 +236,24 @@ def supply_invoice_items(invoice, user):
     return
 
 
-@extend_schema(description='This endpoint is called to update the product stock value. Change_type is either `Increase` or `Decrease` Only the "Warehouse Manager" has authorization for this. Whenever there is a supply from a supplier, the Warehouse Manager uses this endpoint to update the records.')
-@api_view()
+@extend_schema(methods=['post'], request=serializers.StockUpdateSerializer, description='This endpoint is called to update the product stock value. Change_type is either `Increase` or `Decrease` Only the "Warehouse Manager" has authorization for this. Whenever there is a supply from a supplier, the Warehouse Manager uses this endpoint to update the records.')
+@api_view(['POST'])
 @permission_classes([permissions.IsWareHouseManager])
 @parser_classes([CamelCaseJSONParser])
-def stock_update(request, product_id, quantity, change_type):
+def stock_update(request, product_id):
+    data = request.data
+    change_type = data.get('change_type')
+    qr_code = data.get('qr_code', None)
+    product = models.Product.objects.get(id=product_id)
     if change_type not in ['Increase','Decrease']:
         raise ValueError('Change type must be either "Increase" or "Decrease"')
-    product = models.Product.objects.get(id=product_id)
-    updated_product = update_stock(product, change_type, quantity, request.user)
+    if change_type == 'Increase' and qr_code is None:
+        raise ValueError('The QR Code is required when restocking a product')
+    if change_type == 'Increase' and product.qr_code != qr_code:
+        raise ValueError('The QR Code of the supplied product does not match the existing one')
+    serializer = serializers.StockUpdateSerializer(data=data, context=({'request': request, 'product': product}))
+    serializer.is_valid(raise_exception=True)
+    updated_product = serializer.save()
     return Response(serializers.ProductSerializer(updated_product).data)
 
 

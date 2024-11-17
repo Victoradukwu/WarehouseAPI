@@ -9,6 +9,7 @@ from versatileimagefield.serializers import VersatileImageFieldSerializer
 
 from . import models as all_models
 from .models import User
+from .utils import update_stock
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -268,3 +269,23 @@ class InvoiceUpdateSerializer(serializers.Serializer):
         instance.save()
         instance.refresh_from_db()
         return instance
+
+
+class StockUpdateSerializer(serializers.Serializer):
+    quantity = serializers.IntegerField()
+    change_type = serializers.CharField()
+    qr_code = serializers.CharField(required=False)
+    def validate_quantity(self, value):
+        data = self.context.get('request').data
+        quantity = data.get('quantity')
+        if quantity <= 0:
+            raise ValidationError('Quantity must be greater than zero')
+        return value
+
+    @transaction.atomic
+    def save(self):
+        # product_id = self.context.get('product_id')
+        request = self.context.get('request')
+        product = self.context.get('product')
+        updated_product = update_stock(product, self.validated_data.get('change_type'), self.validated_data.get('quantity'), request.user)
+        return updated_product
