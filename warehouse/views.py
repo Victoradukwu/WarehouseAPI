@@ -243,14 +243,14 @@ def supply_invoice_items(invoice, user):
 def stock_update(request, product_id):
     data = request.data
     change_type = data.get('change_type')
-    qr_code = data.get('qr_code', None)
+    # qr_code = data.get('qr_code', None)
     product = models.Product.objects.get(id=product_id)
     if change_type not in ['Increase','Decrease']:
         raise ValueError('Change type must be either "Increase" or "Decrease"')
-    if change_type == 'Increase' and qr_code is None:
-        raise ValueError('The QR Code is required when restocking a product')
-    if change_type == 'Increase' and product.qr_code != qr_code:
-        raise ValueError('The QR Code of the supplied product does not match the existing one')
+    # if change_type == 'Increase' and qr_code is None:
+    #     raise ValueError('The QR Code is required when restocking a product')
+    # if change_type == 'Increase' and product.qr_code != qr_code:
+    #     raise ValueError('The QR Code of the supplied product does not match the existing one')
     serializer = serializers.StockUpdateSerializer(data=data, context=({'request': request, 'product': product}))
     serializer.is_valid(raise_exception=True)
     updated_product = serializer.save()

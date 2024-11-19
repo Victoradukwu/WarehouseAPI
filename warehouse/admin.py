@@ -60,7 +60,7 @@ class ProductAdmin(admin.ModelAdmin):
         'threshold_value',
         'unit_price',
         'stock_value',
-        'qr_code',
+        # 'qr_code',
         'status'
     ]
 

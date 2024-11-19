@@ -153,7 +153,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = all_models.Product
-        fields = ['id', 'name', 'supplier', 'product_unit', 'threshold_value', 'unit_price', 'stock_value', 'qr_code', 'image', 'status']
+        fields = ['id', 'name', 'supplier', 'product_unit', 'threshold_value', 'unit_price', 'stock_value', 'image', 'status']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -276,7 +276,7 @@ class InvoiceUpdateSerializer(serializers.Serializer):
 class StockUpdateSerializer(serializers.Serializer):
     quantity = serializers.IntegerField()
     change_type = serializers.CharField()
-    qr_code = serializers.CharField(required=False)
+    # qr_code = serializers.CharField(required=False)
     def validate_quantity(self, value):
         data = self.context.get('request').data
         quantity = data.get('quantity')

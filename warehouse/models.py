@@ -111,7 +111,7 @@ class Product(TimeStampedModel):
     threshold_value = models.IntegerField()
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
     stock_value = models.FloatField()
-    qr_code = models.CharField(max_length=100)
+    # qr_code = models.CharField(max_length=100)
     image = VersatileImageField('product_image', null=True, blank=True, upload_to=path_and_filename)
     status = models.CharField(max_length=9, choices=ACTIVITY_CHOICES, default=ACTIVE)
 
