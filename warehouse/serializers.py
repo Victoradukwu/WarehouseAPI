@@ -9,7 +9,7 @@ from versatileimagefield.serializers import VersatileImageFieldSerializer
 
 from . import models as all_models
 from .models import User
-from .utils import update_stock
+from .utils import update_stock, create_product_movement
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -154,6 +154,23 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = all_models.Product
         fields = ['id', 'name', 'supplier', 'product_unit', 'threshold_value', 'unit_price', 'stock_value', 'image', 'status']
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        user = self.context.get('request').user
+        stock_after = validated_data.get('stock_value', instance.stock_value)
+        stock_before = instance.stock_value
+        quantity = stock_after - stock_before
+        if quantity > 0.00:
+            movement_type = 'Increase'
+        else:
+            movement_type = 'Decrease'
+
+        application = super().update(instance, validated_data)
+        if quantity != 0.00:
+            create_product_movement(instance.id, abs(quantity), movement_type, user.id, stock_before)
+
+        return application
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
