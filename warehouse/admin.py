@@ -105,3 +105,8 @@ class StockMovementAdmin(admin.ModelAdmin):
         'stock_after',
         'user'
     ]
+
+
+@admin.register(InvoiceProduct)
+class InvoiceProductAdmin(admin.ModelAdmin):
+    pass
