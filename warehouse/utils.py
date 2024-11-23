@@ -50,8 +50,8 @@ def send_pw_reset_email(token, user):
                  f"<body>" \
                  f"<p>Hi {user.first_name},</p>" \
                  f"<p>You requested for a password reset on <b>WareHouse</b></p>" \
-                 f"<p>Kindly click on the link below to reset your password</p>" \
-                 f"<a href=\"{frontend_url}?email={user.email}&token={token}\">Reset password</a>" \
+                 f"<p>Kindly provide your new password and the token below:</p>" \
+                 f"<p>Token: {token}</p>" \
                  f"</body>" \
                  f"</html>"
 
