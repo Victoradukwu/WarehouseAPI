@@ -6,16 +6,20 @@ import django_filters
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Group
 from django.db import transaction
-from djangorestframework_camel_case.parser import CamelCaseFormParser, CamelCaseMultiPartParser, CamelCaseJSONParser
+from djangorestframework_camel_case.parser import (
+    CamelCaseFormParser,
+    CamelCaseJSONParser,
+    CamelCaseMultiPartParser,
+)
 from drf_spectacular.utils import extend_schema
-from rest_framework import status, generics
+from rest_framework import generics, status
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from warehouse import serializers, models, utils, permissions
+from warehouse import models, permissions, serializers, utils
 from warehouse.utils import update_stock
 
 
@@ -128,7 +132,7 @@ def manage_user(request):
 
 class UserListView(generics.ListAPIView):
     """
-       This endpoint returns a list of users
+    This endpoint returns a list of users
     """
     serializer_class = serializers.UserSerializer
 
@@ -138,7 +142,7 @@ class UserListView(generics.ListAPIView):
 
 class UserRetrieveView(generics.RetrieveAPIView):
     """
-       This endpoint returns the details of a single user
+    This endpoint returns the details of a single user
     """
     serializer_class = serializers.UserSerializer
 
@@ -155,10 +159,10 @@ def get_roles(request):
 
 class SupplierListView(generics.ListCreateAPIView):
     """
-       get:
-       Return a list of supplier objects
-       post:
-       Create a new supplier object
+    get:
+    Return a list of supplier objects
+    post:
+    Create a new supplier object
 
     """
     permission_classes = [permissions.IsWareHouseManager]
@@ -170,12 +174,12 @@ class SupplierListView(generics.ListCreateAPIView):
 
 class SupplierDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-       get:
-       Retrieves a single supplier objects
-       patch:
-       Updates a single supplier objects
-       delete:
-       Deletes a single supplier objects
+    get:
+    Retrieves a single supplier objects
+    patch:
+    Updates a single supplier objects
+    delete:
+    Deletes a single supplier objects
     """
     permission_classes = [permissions.IsWareHouseManager]
     serializer_class = serializers.SupplierSerializer
@@ -191,10 +195,10 @@ class SupplierDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class ProductListView(generics.ListCreateAPIView):
     """
-       get:
-       Return a list of product objects
-       post:
-       Create a new product object
+    get:
+        Return a list of product objects
+    post:
+        Create a new product object
 
     """
     permission_classes = [permissions.IsWareHouseManager]
@@ -208,12 +212,12 @@ class ProductListView(generics.ListCreateAPIView):
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-       get:
-       Retrieves a single product objects
-       patch:
-       Updates a single product objects
-       delete:
-       Deletes a single product objects
+    get:
+        Retrieves a single product objects
+    patch:
+        Updates a single product objects
+    delete:
+        Deletes a single product objects
     """
     permission_classes = [permissions.IsWareHouseManager]
     serializer_class = serializers.ProductSerializer
@@ -259,7 +263,7 @@ def stock_update(request, product_id):
 
 class StockMovementListView(generics.ListAPIView):
     """
-       This endpoint returns a list of stock_movement objects. The records returned here are generated when sales are made or when the warehouse is restocked
+    This endpoint returns a list of stock_movement objects. The records returned here are generated when sales are made or when the warehouse is restocked
     """
     serializer_class = serializers.StockMovementSerializer
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend]

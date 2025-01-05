@@ -1,10 +1,12 @@
 import datetime
-import os
 import threading
+
 from django.core.mail import EmailMessage
 from django.db import transaction
 from django_filters import rest_framework as filters
+
 from . import models
+
 # from .models import User
 
 
@@ -21,14 +23,14 @@ def send_email(payload):
 def send_threshold_alert(product, managers):
     for user in managers:
         email_body = f"<html>" \
-                     f"<head>" \
-                     f"</head>" \
-                     f"<body>" \
-                     f"<p>Hi {user.first_name},</p>" \
-                     f"<p>This is to notify you that the product <b>{product.name}</b> is running low. The current stock is {product.stock_value} {product.product_unit}</p>" \
-                     f"<p>Consider restocking as soon as possible</p>" \
-                     f"</body>" \
-                     f"</html>"
+                    f"<head>" \
+                    f"</head>" \
+                    f"<body>" \
+                    f"<p>Hi {user.first_name},</p>" \
+                    f"<p>This is to notify you that the product <b>{product.name}</b> is running low. The current stock is {product.stock_value} {product.product_unit}</p>" \
+                    f"<p>Consider restocking as soon as possible</p>" \
+                    f"</body>" \
+                    f"</html>"
 
         payload = {
             'subject': 'Product level notification',
@@ -43,17 +45,16 @@ def send_threshold_alert(product, managers):
 
 
 def send_pw_reset_email(token, user):
-    frontend_url = os.getenv('FRONTEND_URL')
     email_body = f"<html>" \
-                 f"<head>" \
-                 f"</head>" \
-                 f"<body>" \
-                 f"<p>Hi {user.first_name},</p>" \
-                 f"<p>You requested for a password reset on <b>WareHouse</b></p>" \
-                 f"<p>Kindly provide your new password and the token below:</p>" \
-                 f"<p>Token: {token}</p>" \
-                 f"</body>" \
-                 f"</html>"
+                f"<head>" \
+                f"</head>" \
+                f"<body>" \
+                f"<p>Hi {user.first_name},</p>" \
+                f"<p>You requested for a password reset on <b>WareHouse</b></p>" \
+                f"<p>Kindly provide your new password and the token below:</p>" \
+                f"<p>Token: {token}</p>" \
+                f"</body>" \
+                f"</html>"
 
     payload = {
         'subject': 'Password Reset',

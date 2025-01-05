@@ -103,3 +103,5 @@ uploads/
 
 process.yml
 
+# Vs Code
+.vscode/

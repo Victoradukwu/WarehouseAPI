@@ -1,6 +1,10 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
-from rest_framework.exceptions import NotAuthenticated, PermissionDenied, AuthenticationFailed
+from rest_framework.exceptions import (
+    AuthenticationFailed,
+    NotAuthenticated,
+    PermissionDenied,
+)
 from rest_framework.response import Response
 
 

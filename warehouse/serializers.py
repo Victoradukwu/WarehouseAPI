@@ -9,7 +9,7 @@ from versatileimagefield.serializers import VersatileImageFieldSerializer
 
 from . import models as all_models
 from .models import User
-from .utils import update_stock, create_product_movement
+from .utils import create_product_movement, update_stock
 
 
 class UserSerializer(serializers.ModelSerializer):
